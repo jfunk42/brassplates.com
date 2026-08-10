@@ -35,6 +35,28 @@ function addDays(isoDate, days) {
   return formatIsoDate(date);
 }
 
+function getInitialSelectedDate(availableDates) {
+  const today = getTodayIsoDate();
+
+  if (availableDates.includes(today)) {
+    return today;
+  }
+
+  const previousDates = availableDates.filter((date) => date < today);
+
+  if (previousDates.length > 0) {
+    return previousDates[previousDates.length - 1];
+  }
+
+  const nextDates = availableDates.filter((date) => date > today);
+
+  if (nextDates.length > 0) {
+    return nextDates[0];
+  }
+
+  return today;
+}
+
 function getElements() {
   return {
     previousDayButton: document.querySelector("#previous-day"),
@@ -127,11 +149,14 @@ async function loadEntries() {
       throw new Error("Entries payload must be an array.");
     }
 
-    state.entriesByDate = new Map(
-      entries.map((entry) => [entry.date, entry])
-    );
+    const availableDates = entries
+      .map((entry) => entry.date)
+      .filter((date) => typeof date === "string")
+      .sort((left, right) => left.localeCompare(right));
 
-    state.selectedDate = getTodayIsoDate();
+    state.entriesByDate = new Map(entries.map((entry) => [entry.date, entry]));
+
+    state.selectedDate = getInitialSelectedDate(availableDates);
     attachEventHandlers();
     renderSelectedDate();
   } catch (error) {
