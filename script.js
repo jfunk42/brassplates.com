@@ -39,14 +39,35 @@ function isIsoDateString(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+function parseHashDate(hash) {
+  const match = /^#?(\d{4})(\d{2})(\d{2})$/.exec(hash);
+
+  if (!match) {
+    return null;
+  }
+
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function formatHashDate(isoDate) {
+  return `#${isoDate.replaceAll("-", "")}`;
+}
+
 function getRequestedDate() {
+  const hashDate = parseHashDate(window.location.hash);
+
+  if (hashDate) {
+    return hashDate;
+  }
+
   const requestedDate = new URL(window.location.href).searchParams.get("date");
   return isIsoDateString(requestedDate) ? requestedDate : null;
 }
 
 function updateSelectedDateUrl(replace = false) {
   const url = new URL(window.location.href);
-  url.searchParams.set("date", state.selectedDate);
+  url.searchParams.delete("date");
+  url.hash = formatHashDate(state.selectedDate);
 
   if (replace) {
     window.history.replaceState({ selectedDate: state.selectedDate }, "", url);
@@ -54,6 +75,14 @@ function updateSelectedDateUrl(replace = false) {
   }
 
   window.history.pushState({ selectedDate: state.selectedDate }, "", url);
+}
+
+function syncSelectedDateFromUrl() {
+  const requestedDate = getRequestedDate();
+
+  if (requestedDate && requestedDate !== state.selectedDate) {
+    setSelectedDate(requestedDate, { skipHistory: true });
+  }
 }
 
 function getInitialSelectedDate(availableDates) {
@@ -156,13 +185,8 @@ function attachEventHandlers() {
     }
   });
 
-  window.addEventListener("popstate", () => {
-    const requestedDate = getRequestedDate();
-
-    if (requestedDate && requestedDate !== state.selectedDate) {
-      setSelectedDate(requestedDate, { skipHistory: true });
-    }
-  });
+  window.addEventListener("popstate", syncSelectedDateFromUrl);
+  window.addEventListener("hashchange", syncSelectedDateFromUrl);
 }
 
 async function loadEntries() {
