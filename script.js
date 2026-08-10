@@ -70,11 +70,8 @@ function getElements() {
     cfmLink: document.querySelector("#cfm-link"),
     entryThought: document.querySelector("#entry-thought"),
     emptyState: document.querySelector("#empty-state"),
-    iframeSection: document.querySelector("#iframe-section"),
     bomFrame: document.querySelector("#bom-frame"),
     cfmFrame: document.querySelector("#cfm-frame"),
-    bomOpenLink: document.querySelector("#bom-open-link"),
-    cfmOpenLink: document.querySelector("#cfm-open-link"),
   };
 }
 
@@ -86,7 +83,6 @@ function renderSelectedDate() {
 
   if (!entry) {
     elements.entryCard.hidden = true;
-    elements.iframeSection.hidden = true;
     elements.emptyState.hidden = false;
     elements.emptyState.textContent =
       `No entry is available for ${formatDate(state.selectedDate)} yet.`;
@@ -95,7 +91,6 @@ function renderSelectedDate() {
 
   elements.emptyState.hidden = true;
   elements.entryCard.hidden = false;
-  elements.iframeSection.hidden = false;
 
   elements.entryDate.textContent = formatDate(entry.date);
   elements.bomReference.textContent = entry.book_of_mormon_reference;
@@ -104,8 +99,6 @@ function renderSelectedDate() {
   elements.cfmLink.href = entry.come_follow_me_reference_url;
   elements.entryThought.textContent = entry.connecting_thought_text;
 
-  elements.bomOpenLink.href = entry.book_of_mormon_reference_url;
-  elements.cfmOpenLink.href = entry.come_follow_me_reference_url;
   elements.bomFrame.src = entry.book_of_mormon_reference_url;
   elements.cfmFrame.src = entry.come_follow_me_reference_url;
 }

@@ -37,51 +37,27 @@
       <article id="entry-card" class="entry-card" hidden>
         <p id="entry-date" class="entry-date"></p>
 
-        <div class="reference-grid">
-          <a id="bom-link" class="reference-card" target="_blank" rel="noreferrer">
-            <span class="reference-label">Book of Mormon</span>
-            <strong id="bom-reference"></strong>
-          </a>
-
-          <a id="cfm-link" class="reference-card" target="_blank" rel="noreferrer">
-            <span class="reference-label">Come, Follow Me</span>
-            <strong id="cfm-reference"></strong>
-          </a>
-        </div>
-
         <p id="entry-thought" class="entry-thought"></p>
-      </article>
-
-      <p id="empty-state" class="empty-state" hidden></p>
-    </section>
-
-    <section id="iframe-section" class="details iframe-section" hidden>
-      <div class="section-heading">
-        <div>
-          <h2>Scripture study view</h2>
-          <p class="section-copy">
-            Read both passages inline, or use the reference cards above to open them in a new tab.
-          </p>
-        </div>
-      </div>
 
       <div class="iframe-grid">
         <article class="iframe-card">
-          <div class="iframe-header">
+          <a id="bom-link" class="reference-card iframe-reference" target="_blank" rel="noreferrer">
             <span class="reference-label">Book of Mormon</span>
-            <a id="bom-open-link" class="inline-link" target="_blank" rel="noreferrer">Open in new tab</a>
-          </div>
+            <strong id="bom-reference"></strong>
+          </a>
           <iframe id="bom-frame" class="study-frame" title="Book of Mormon reference"></iframe>
         </article>
 
         <article class="iframe-card">
-          <div class="iframe-header">
+          <a id="cfm-link" class="reference-card iframe-reference" target="_blank" rel="noreferrer">
             <span class="reference-label">Come, Follow Me</span>
-            <a id="cfm-open-link" class="inline-link" target="_blank" rel="noreferrer">Open in new tab</a>
-          </div>
+            <strong id="cfm-reference"></strong>
+          </a>
           <iframe id="cfm-frame" class="study-frame" title="Come, Follow Me reference"></iframe>
         </article>
       </div>
+
+      <p id="empty-state" class="empty-state" hidden></p>
     </section>
   </main>
 
