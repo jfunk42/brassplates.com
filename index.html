@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brass Plates</title>
+  <meta
+    name="description"
+    content="A static GitHub Pages site for scripture connections between the Book of Mormon and Come, Follow Me readings."
+  >
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">BrassPlates.com</p>
+      <h1>Daily scripture connections</h1>
+      <p class="lead">
+        A simple study companion for collecting links between Book of Mormon passages and
+        Come, Follow Me readings. Add new entries to the JSON file and the site updates itself.
+      </p>
+    </section>
+
+    <section class="details">
+      <div class="section-heading">
+        <div>
+          <h2>Reading schedule</h2>
+          <p class="section-copy">
+            Each entry pairs a Book of Mormon reference with a Come, Follow Me reference and a
+            short connecting thought.
+          </p>
+        </div>
+      </div>
+
+      <div id="entries" class="entry-list" aria-live="polite"></div>
+      <p id="empty-state" class="empty-state" hidden>No entries available yet.</p>
+    </section>
+  </main>
+
+  <template id="entry-template">
+    <article class="entry-card">
+      <p class="entry-date"></p>
+      <div class="reference-grid">
+        <a class="reference-card bom-link" target="_blank" rel="noreferrer">
+          <span class="reference-label">Book of Mormon</span>
+          <strong class="bom-reference"></strong>
+        </a>
+        <a class="reference-card cfm-link" target="_blank" rel="noreferrer">
+          <span class="reference-label">Come, Follow Me</span>
+          <strong class="cfm-reference"></strong>
+        </a>
+      </div>
+      <p class="entry-thought"></p>
+    </article>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
