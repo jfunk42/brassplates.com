@@ -17,42 +17,73 @@
       <h1>Daily scripture connections</h1>
       <p class="lead">
         A simple study companion for collecting links between Book of Mormon passages and
-        Come, Follow Me readings. Add new entries to the JSON file and the site updates itself.
+        Come, Follow Me readings. Move day by day, jump to any date, and read both references
+        without leaving the page.
       </p>
     </section>
 
     <section class="details">
+      <div class="viewer-controls" aria-label="Date navigation">
+        <button id="previous-day" class="nav-button" type="button">Previous day</button>
+
+        <label class="date-picker">
+          <span>Choose a date</span>
+          <input id="selected-date" type="date">
+        </label>
+
+        <button id="next-day" class="nav-button" type="button">Next day</button>
+      </div>
+
+      <article id="entry-card" class="entry-card" hidden>
+        <p id="entry-date" class="entry-date"></p>
+
+        <div class="reference-grid">
+          <a id="bom-link" class="reference-card" target="_blank" rel="noreferrer">
+            <span class="reference-label">Book of Mormon</span>
+            <strong id="bom-reference"></strong>
+          </a>
+
+          <a id="cfm-link" class="reference-card" target="_blank" rel="noreferrer">
+            <span class="reference-label">Come, Follow Me</span>
+            <strong id="cfm-reference"></strong>
+          </a>
+        </div>
+
+        <p id="entry-thought" class="entry-thought"></p>
+      </article>
+
+      <p id="empty-state" class="empty-state" hidden></p>
+    </section>
+
+    <section id="iframe-section" class="details iframe-section" hidden>
       <div class="section-heading">
         <div>
-          <h2>Reading schedule</h2>
+          <h2>Scripture study view</h2>
           <p class="section-copy">
-            Each entry pairs a Book of Mormon reference with a Come, Follow Me reference and a
-            short connecting thought.
+            Read both passages inline, or use the reference cards above to open them in a new tab.
           </p>
         </div>
       </div>
 
-      <div id="entries" class="entry-list" aria-live="polite"></div>
-      <p id="empty-state" class="empty-state" hidden>No entries available yet.</p>
+      <div class="iframe-grid">
+        <article class="iframe-card">
+          <div class="iframe-header">
+            <span class="reference-label">Book of Mormon</span>
+            <a id="bom-open-link" class="inline-link" target="_blank" rel="noreferrer">Open in new tab</a>
+          </div>
+          <iframe id="bom-frame" class="study-frame" title="Book of Mormon reference"></iframe>
+        </article>
+
+        <article class="iframe-card">
+          <div class="iframe-header">
+            <span class="reference-label">Come, Follow Me</span>
+            <a id="cfm-open-link" class="inline-link" target="_blank" rel="noreferrer">Open in new tab</a>
+          </div>
+          <iframe id="cfm-frame" class="study-frame" title="Come, Follow Me reference"></iframe>
+        </article>
+      </div>
     </section>
   </main>
-
-  <template id="entry-template">
-    <article class="entry-card">
-      <p class="entry-date"></p>
-      <div class="reference-grid">
-        <a class="reference-card bom-link" target="_blank" rel="noreferrer">
-          <span class="reference-label">Book of Mormon</span>
-          <strong class="bom-reference"></strong>
-        </a>
-        <a class="reference-card cfm-link" target="_blank" rel="noreferrer">
-          <span class="reference-label">Come, Follow Me</span>
-          <strong class="cfm-reference"></strong>
-        </a>
-      </div>
-      <p class="entry-thought"></p>
-    </article>
-  </template>
 
   <script src="script.js"></script>
 </body>
