@@ -35,7 +35,34 @@ function addDays(isoDate, days) {
   return formatIsoDate(date);
 }
 
+function isIsoDateString(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function getRequestedDate() {
+  const requestedDate = new URL(window.location.href).searchParams.get("date");
+  return isIsoDateString(requestedDate) ? requestedDate : null;
+}
+
+function updateSelectedDateUrl(replace = false) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("date", state.selectedDate);
+
+  if (replace) {
+    window.history.replaceState({ selectedDate: state.selectedDate }, "", url);
+    return;
+  }
+
+  window.history.pushState({ selectedDate: state.selectedDate }, "", url);
+}
+
 function getInitialSelectedDate(availableDates) {
+  const requestedDate = getRequestedDate();
+
+  if (requestedDate) {
+    return requestedDate;
+  }
+
   const today = getTodayIsoDate();
 
   if (availableDates.includes(today)) {
@@ -103,9 +130,13 @@ function renderSelectedDate() {
   elements.cfmFrame.src = entry.come_follow_me_reference_url;
 }
 
-function setSelectedDate(nextDate) {
+function setSelectedDate(nextDate, { replaceHistory = false, skipHistory = false } = {}) {
   state.selectedDate = nextDate;
   renderSelectedDate();
+
+  if (!skipHistory) {
+    updateSelectedDateUrl(replaceHistory);
+  }
 }
 
 function attachEventHandlers() {
@@ -122,6 +153,14 @@ function attachEventHandlers() {
   elements.dateInput.addEventListener("change", (event) => {
     if (event.target.value) {
       setSelectedDate(event.target.value);
+    }
+  });
+
+  window.addEventListener("popstate", () => {
+    const requestedDate = getRequestedDate();
+
+    if (requestedDate && requestedDate !== state.selectedDate) {
+      setSelectedDate(requestedDate, { skipHistory: true });
     }
   });
 }
@@ -151,7 +190,7 @@ async function loadEntries() {
 
     state.selectedDate = getInitialSelectedDate(availableDates);
     attachEventHandlers();
-    renderSelectedDate();
+    setSelectedDate(state.selectedDate, { replaceHistory: true });
   } catch (error) {
     elements.emptyState.hidden = false;
     elements.emptyState.textContent = "Entries could not be loaded right now.";

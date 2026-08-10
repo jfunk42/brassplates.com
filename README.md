@@ -4,7 +4,8 @@ Static GitHub Pages site for scripture connections between Book of Mormon readin
 Come, Follow Me passages.
 
 The homepage shows one day at a time, defaults to the current date, supports previous/next
-day navigation, and includes a date picker plus inline scripture frames.
+day navigation, keeps the selected date in the URL for bookmarking, and includes a date
+picker plus inline scripture frames.
 
 ## Content updates
 
