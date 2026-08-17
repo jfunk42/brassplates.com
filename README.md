@@ -7,6 +7,10 @@ The homepage shows one day at a time, defaults to the current date, supports pre
 day navigation, keeps the selected date in the URL for bookmarking, and includes a date
 picker plus inline scripture frames.
 
+Append `#admin` to the URL to open the in-browser admin tools. Admin mode uses
+`#admin/YYYYMMDD`, lets you edit the currently selected date, merge pasted JSON that replaces
+same-date entries, and download a refreshed `entries.json` file for upload back to GitHub.
+
 ## Content updates
 
 Add or edit entries in `data/entries.json`. Each entry should include:

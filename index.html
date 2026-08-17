@@ -34,6 +34,85 @@
         <button id="next-day" class="nav-button" type="button">Next day</button>
       </div>
 
+      <section id="admin-panel" class="admin-panel" hidden>
+        <div class="admin-intro">
+          <p class="eyebrow">Admin mode</p>
+          <h2>Edit and export entries</h2>
+          <p class="section-copy">
+            Changes stay in your browser until you download a fresh <code>entries.json</code>
+            file. Pasted JSON replaces existing entries when the dates match.
+          </p>
+        </div>
+
+        <p id="admin-status" class="admin-status" hidden></p>
+
+        <div class="admin-grid">
+          <section class="admin-card">
+            <h3>Edit current date</h3>
+
+            <form id="admin-entry-form" class="admin-form">
+              <label class="form-field">
+                <span>Date</span>
+                <input id="admin-entry-date" type="date" readonly>
+              </label>
+
+              <label class="form-field">
+                <span>Book of Mormon reference</span>
+                <input id="admin-bom-reference" type="text" required>
+              </label>
+
+              <label class="form-field">
+                <span>Book of Mormon reference URL</span>
+                <input id="admin-bom-url" type="url" required>
+              </label>
+
+              <label class="form-field">
+                <span>Come, Follow Me reference</span>
+                <input id="admin-cfm-reference" type="text" required>
+              </label>
+
+              <label class="form-field">
+                <span>Come, Follow Me reference URL</span>
+                <input id="admin-cfm-url" type="url" required>
+              </label>
+
+              <label class="form-field">
+                <span>Connecting thought</span>
+                <textarea id="admin-thought" rows="6" required></textarea>
+              </label>
+
+              <button class="primary-button" type="submit">Save current date</button>
+            </form>
+          </section>
+
+          <section class="admin-card">
+            <h3>Merge pasted JSON</h3>
+            <p class="section-copy">
+              Paste an array of entries. Existing dates will be replaced; new dates will be
+              added.
+            </p>
+
+            <label class="form-field">
+              <span>Entries to merge</span>
+              <textarea
+                id="admin-merge-input"
+                rows="14"
+                placeholder='[{"date":"2026-08-10","book_of_mormon_reference":"..."}]'
+              ></textarea>
+            </label>
+
+            <div class="admin-actions">
+              <button id="admin-merge-button" class="primary-button" type="button">
+                Merge pasted JSON
+              </button>
+              <button id="admin-download-button" class="nav-button" type="button">
+                Download entries.json
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
+
       <article id="entry-card" class="entry-card" hidden>
         <p id="entry-date" class="entry-date"></p>
 

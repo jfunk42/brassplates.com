@@ -78,6 +78,11 @@ h1 {
   margin-top: 28px;
 }
 
+.details code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.95em;
+}
+
 .viewer-controls {
   display: grid;
   grid-template-columns: auto minmax(180px, 240px) auto;
@@ -87,24 +92,46 @@ h1 {
 }
 
 .nav-button,
+.primary-button,
+.form-field input,
+.form-field textarea,
 .date-picker input {
   border: 1px solid var(--border);
   border-radius: 14px;
   font: inherit;
 }
 
-.nav-button {
+.nav-button,
+.primary-button {
   padding: 14px 18px;
-  background: var(--surface-alt);
   color: var(--text);
   cursor: pointer;
 }
 
+.nav-button {
+  background: var(--surface-alt);
+}
+
+.primary-button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf8;
+}
+
 .nav-button:hover,
 .nav-button:focus-visible,
+.primary-button:hover,
+.primary-button:focus-visible,
+.form-field input:focus-visible,
+.form-field textarea:focus-visible,
 .date-picker input:focus-visible {
   border-color: var(--accent);
   outline: none;
+}
+
+.primary-button:hover,
+.primary-button:focus-visible {
+  background: var(--accent-dark);
 }
 
 .date-picker {
@@ -126,6 +153,85 @@ h1 {
 
 .entry-card {
   padding: 24px;
+}
+
+.admin-panel {
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(243, 234, 216, 0.65) 0%, var(--surface) 100%);
+}
+
+.admin-intro {
+  margin-bottom: 20px;
+}
+
+.admin-status {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #eef6ec;
+  border: 1px solid #b8d7b2;
+  color: #22491a;
+  line-height: 1.6;
+}
+
+.admin-status.is-error {
+  background: #fff1ee;
+  border-color: #e0b1a8;
+  color: #7a2314;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.admin-card {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.admin-card h3 {
+  margin: 0 0 12px;
+}
+
+.admin-form,
+.form-field {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-form {
+  gap: 16px;
+}
+
+.form-field span {
+  color: var(--accent-dark);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.form-field input,
+.form-field textarea {
+  width: 100%;
+  padding: 13px 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.form-field textarea {
+  resize: vertical;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .entry-date {
@@ -222,9 +328,18 @@ h1 {
     padding: 20px;
   }
 
+  .admin-panel,
+  .admin-card {
+    padding: 18px;
+  }
+
   .viewer-controls {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .admin-actions {
+    flex-direction: column;
   }
 
   .study-frame {
