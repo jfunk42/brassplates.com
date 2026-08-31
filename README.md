@@ -33,11 +33,12 @@ Add or edit entries in `data/cfm.json`. Each entry should include:
 - `come_follow_me_reference`
 - `come_follow_me_reference_url`
 - `connecting_thought_text`
-- Optional `youtube_clips` and `files` arrays. Each item requires `url` and `description`, and
-  can include a numeric `order` (lower values appear first; unordered items follow ordered ones).
-  YouTube clips must use a YouTube video URL and render as paused embedded previews.
+- Optional `youtube_clips` and `files` arrays. Items can include a numeric `order` (lower values
+  appear first; unordered items follow ordered ones). YouTube clips require `url` and
+  `description`, and must use a YouTube video URL that renders as a paused embedded preview.
   Files can use an existing URL or be uploaded through admin mode. Uploads are stored in
   `data/files/`, limited to 1 MB, and overwrite an existing file with the same name.
+  File `title` and `description` values are optional; the filename is shown when no title is set.
 
 ## Publish
 

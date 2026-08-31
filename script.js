@@ -465,7 +465,7 @@ function renderAdminPanel(entry) {
     editableEntry.youtube_clips,
     "https://youtube.com/watch?v=..."
   );
-  renderResourceInputs(elements.adminFiles, editableEntry.files, "https://...");
+  renderResourceInputs(elements.adminFiles, editableEntry.files, "https://...", true);
 }
 
 function sortResources(resources) {
@@ -522,8 +522,16 @@ function renderResources(container, resources) {
     link.href = resource.url;
     link.target = "_blank";
     link.rel = "noreferrer";
-    link.textContent = resource.description;
+    link.textContent = resource.title || resource.url.split("/").pop();
     listItem.append(link);
+
+    if (resource.description) {
+      const description = document.createElement("p");
+      description.className = "resource-description";
+      description.textContent = resource.description;
+      listItem.append(description);
+    }
+
     container.append(listItem);
   }
 }
@@ -594,14 +602,19 @@ function normalizeResources(resources, fieldName) {
   }
 
   return resources.map((resource, index) => {
-    const description = String(resource.description ?? "").trim();
+    const title = String(
+      resource.title ?? (fieldName === "Files" ? resource.description ?? "" : "")
+    ).trim();
+    const description = String(
+      fieldName === "Files" ? resource.description ?? "" : resource.description ?? ""
+    ).trim();
     const url = String(resource.url ?? "").trim();
     const orderValue = resource.order;
     const order = orderValue === "" || orderValue === undefined || orderValue === null
       ? undefined
       : Number(orderValue);
 
-    if (!description || !url) {
+    if ((fieldName !== "Files" && !description) || !url) {
       throw new Error(`${fieldName} item ${index + 1} requires a description and URL.`);
     }
 
@@ -619,7 +632,17 @@ function normalizeResources(resources, fieldName) {
       throw new Error(`${fieldName} item ${index + 1} must use a YouTube video URL.`);
     }
 
-    return order === undefined ? { description, url } : { description, url, order };
+    const normalizedResource = fieldName === "Files"
+      ? {
+        ...(title ? { title } : {}),
+        ...(description && resource.title !== undefined ? { description } : {}),
+        url,
+      }
+      : { description, url };
+
+    return order === undefined
+      ? normalizedResource
+      : { ...normalizedResource, order };
   });
 }
 
@@ -656,8 +679,9 @@ function normalizeEntry(entry, fallbackDate = null) {
   return normalizedEntry;
 }
 
-function createResourceInput(resource = {}, urlPlaceholder = "https://...") {
+function createResourceInput(resource = {}, urlPlaceholder = "https://...", includesTitle = false) {
   const row = document.createElement("div");
+  const title = document.createElement("input");
   const description = document.createElement("input");
   const url = document.createElement("input");
   const order = document.createElement("input");
@@ -665,8 +689,12 @@ function createResourceInput(resource = {}, urlPlaceholder = "https://...") {
 
   row.className = "resource-editor-row";
   row.dataset.resourceRow = "";
+  title.type = "text";
+  title.placeholder = "Title (optional)";
+  title.value = resource.title ?? "";
+  title.dataset.resourceTitle = "";
   description.type = "text";
-  description.placeholder = "Description";
+  description.placeholder = includesTitle ? "Description (optional)" : "Description";
   description.value = resource.description ?? "";
   description.dataset.resourceDescription = "";
   url.type = "url";
@@ -683,18 +711,22 @@ function createResourceInput(resource = {}, urlPlaceholder = "https://...") {
   removeButton.textContent = "Remove";
   removeButton.addEventListener("click", () => row.remove());
 
+  if (includesTitle) {
+    row.append(title);
+  }
+
   row.append(description, url, order, removeButton);
   return row;
 }
 
-function renderResourceInputs(container, resources, urlPlaceholder) {
+function renderResourceInputs(container, resources, urlPlaceholder, includesTitle = false) {
   container.replaceChildren(
-    ...resources.map((resource) => createResourceInput(resource, urlPlaceholder))
+    ...resources.map((resource) => createResourceInput(resource, urlPlaceholder, includesTitle))
   );
 }
 
-function addResourceInput(container, urlPlaceholder) {
-  const input = createResourceInput({}, urlPlaceholder);
+function addResourceInput(container, urlPlaceholder, includesTitle = false) {
+  const input = createResourceInput({}, urlPlaceholder, includesTitle);
   container.append(input);
   input.querySelector("[data-resource-description]").focus();
 }
@@ -714,14 +746,13 @@ function addUploadedFile(file) {
 
   const url = getUploadedFileUrl(file);
   const elements = getElements();
-  elements.adminFiles.append(
-    createResourceInput({ description: file.name, url }, "https://...")
-  );
+  elements.adminFiles.append(createResourceInput({ title: file.name, url }, "https://...", true));
   state.pendingFileUploads.set(url, file);
 }
 
-function readResourceInputs(container) {
+function readResourceInputs(container, includesTitle = false) {
   return Array.from(container.querySelectorAll("[data-resource-row]"), (row) => ({
+    ...(includesTitle ? { title: row.querySelector("[data-resource-title]").value } : {}),
     description: row.querySelector("[data-resource-description]").value,
     url: row.querySelector("[data-resource-url]").value,
     order: row.querySelector("[data-resource-order]").value,
@@ -739,7 +770,7 @@ function readAdminEntryForm() {
     come_follow_me_reference_url: elements.adminCfmUrl.value,
     connecting_thought_text: elements.adminThought.value,
     youtube_clips: readResourceInputs(elements.adminYouTubeClips),
-    files: readResourceInputs(elements.adminFiles),
+    files: readResourceInputs(elements.adminFiles, true),
   });
 }
 
@@ -1110,7 +1141,7 @@ function attachEventHandlers() {
     addResourceInput(elements.adminYouTubeClips, "https://youtube.com/watch?v=...");
   });
   elements.addFileButton.addEventListener("click", () => {
-    addResourceInput(elements.adminFiles, "https://...");
+    addResourceInput(elements.adminFiles, "https://...", true);
   });
   elements.adminFileUpload.addEventListener("change", () => {
     const [file] = elements.adminFileUpload.files;
