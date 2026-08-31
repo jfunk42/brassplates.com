@@ -53,6 +53,23 @@
 
         <p id="admin-status" class="admin-status" hidden></p>
 
+        <dialog id="github-save-confirmation" class="save-confirmation">
+          <div class="save-confirmation-content">
+            <p class="eyebrow">Review changes</p>
+            <h2>Confirm GitHub save</h2>
+            <p class="section-copy">
+              Review the exact entry changes below before they are sent to GitHub.
+            </p>
+            <div id="github-save-diff" class="save-diff"></div>
+            <div class="admin-actions">
+              <button id="cancel-github-save" class="nav-button" type="button">Cancel</button>
+              <button id="confirm-github-save" class="primary-button" type="button">
+                Confirm and save
+              </button>
+            </div>
+          </div>
+        </dialog>
+
         <div class="admin-grid">
           <section class="admin-card">
             <h3>Edit current date</h3>

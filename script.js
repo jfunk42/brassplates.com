@@ -4,6 +4,7 @@ const state = {
   availableDates: [],
   selectedDate: null,
   adminMode: false,
+  publishedEntries: [],
 };
 
 const ENTRY_FIELD_LABELS = {
@@ -224,6 +225,10 @@ function getElements() {
     clearGitHubPatButton: document.querySelector("#clear-github-pat"),
     githubStatus: document.querySelector("#github-status"),
     githubSaveButton: document.querySelector("#github-save"),
+    githubSaveConfirmation: document.querySelector("#github-save-confirmation"),
+    githubSaveDiff: document.querySelector("#github-save-diff"),
+    confirmGitHubSaveButton: document.querySelector("#confirm-github-save"),
+    cancelGitHubSaveButton: document.querySelector("#cancel-github-save"),
     adminMergeInput: document.querySelector("#admin-merge-input"),
     adminMergeButton: document.querySelector("#admin-merge-button"),
     entryCard: document.querySelector("#entry-card"),
@@ -252,6 +257,10 @@ function rebuildEntriesState(entries) {
   state.entries = sortedEntries;
   state.availableDates = sortedEntries.map((entry) => entry.date);
   state.entriesByDate = new Map(sortedEntries.map((entry) => [entry.date, entry]));
+}
+
+function cloneEntries(entries) {
+  return JSON.parse(JSON.stringify(entries));
 }
 
 function getBlankEntry(date) {
@@ -287,6 +296,84 @@ function setGitHubSaveState(isSaving) {
   elements.githubSaveButton.textContent = isSaving
     ? "Saving to GitHub..."
     : "Save and create pull request";
+}
+
+function getEntriesDiff() {
+  const publishedEntriesByDate = new Map(
+    state.publishedEntries.map((entry) => [entry.date, entry])
+  );
+  const currentEntriesByDate = new Map(state.entries.map((entry) => [entry.date, entry]));
+  const dates = new Set([...publishedEntriesByDate.keys(), ...currentEntriesByDate.keys()]);
+  const changes = [];
+
+  for (const date of Array.from(dates).sort(compareDates)) {
+    const previous = publishedEntriesByDate.get(date);
+    const current = currentEntriesByDate.get(date);
+
+    if (!previous) {
+      changes.push({ date, type: "added", current });
+      continue;
+    }
+
+    if (!current) {
+      changes.push({ date, type: "removed", previous });
+      continue;
+    }
+
+    if (JSON.stringify(previous) !== JSON.stringify(current)) {
+      changes.push({ date, type: "updated", previous, current });
+    }
+  }
+
+  return changes;
+}
+
+function createDiffValue(label, value, className) {
+  const wrapper = document.createElement("div");
+  const heading = document.createElement("h4");
+  const code = document.createElement("pre");
+
+  wrapper.className = `save-diff-value ${className}`;
+  heading.textContent = label;
+  code.textContent = JSON.stringify(value, null, 2);
+  wrapper.append(heading, code);
+  return wrapper;
+}
+
+function renderEntriesDiff(changes) {
+  const elements = getElements();
+  elements.githubSaveDiff.replaceChildren();
+
+  for (const change of changes) {
+    const entry = document.createElement("section");
+    const heading = document.createElement("h3");
+
+    entry.className = "save-diff-entry";
+    heading.textContent = `${change.date} (${change.type})`;
+    entry.append(heading);
+
+    if (change.previous) {
+      entry.append(createDiffValue("Before", change.previous, "before"));
+    }
+
+    if (change.current) {
+      entry.append(createDiffValue("After", change.current, "after"));
+    }
+
+    elements.githubSaveDiff.append(entry);
+  }
+}
+
+function showGitHubSaveConfirmation() {
+  const changes = getEntriesDiff();
+
+  if (changes.length === 0) {
+    setGitHubStatus("There are no unpublished changes to save.");
+    return;
+  }
+
+  renderEntriesDiff(changes);
+  getElements().githubSaveConfirmation.showModal();
 }
 
 function clearAdminStatus() {
@@ -753,7 +840,6 @@ function upsertEntries(entries) {
 
 async function handleAdminEntrySave(event) {
   event.preventDefault();
-  setGitHubSaveState(true);
   setGitHubStatus("Validating your entry...");
 
   try {
@@ -767,10 +853,36 @@ async function handleAdminEntrySave(event) {
     }
 
     saveGitHubPat(token);
-    setAdminStatus("Saving your changes to GitHub...");
-    setGitHubStatus("Saving data/entries.json to GitHub...");
+    setAdminStatus("Review the changes before saving them to GitHub.");
+    setGitHubStatus("Changes are ready for review.");
+    showGitHubSaveConfirmation();
+  } catch (error) {
+    const response = error instanceof GitHubApiError
+      ? `GitHub API response: ${error.status}. ${error.message}`
+      : error.message;
+    setAdminStatus(response, true);
+    setGitHubStatus(response, true);
+  }
+}
+
+async function handleGitHubSaveConfirmation() {
+  const elements = getElements();
+  const token = elements.githubPat.value.trim();
+
+  if (!token) {
+    setGitHubStatus("Enter a GitHub personal access token to create a pull request.", true);
+    return;
+  }
+
+  elements.githubSaveConfirmation.close();
+  setGitHubSaveState(true);
+  setAdminStatus("Saving your changes to GitHub...");
+  setGitHubStatus("Saving data/entries.json to GitHub...");
+
+  try {
     const result = await publishEntriesToGitHub(token);
     const commitSha = result.fileUpdate.commit.sha.slice(0, 7);
+    state.publishedEntries = cloneEntries(state.entries);
 
     if (result.directPush) {
       setAdminStatus(`Saved directly to ${GITHUB_MAIN_BRANCH} for ${result.login}.`);
@@ -877,6 +989,11 @@ function attachEventHandlers() {
     setAdminStatus("Removed the saved GitHub token from this browser.");
   });
   elements.adminEntryForm.addEventListener("submit", handleAdminEntrySave);
+  elements.confirmGitHubSaveButton.addEventListener("click", handleGitHubSaveConfirmation);
+  elements.cancelGitHubSaveButton.addEventListener("click", () => {
+    elements.githubSaveConfirmation.close();
+    setGitHubStatus("Save cancelled. Your changes remain in this browser.");
+  });
   elements.adminMergeButton.addEventListener("click", handleAdminMerge);
 
   window.addEventListener("popstate", syncSelectedDateFromUrl);
@@ -901,6 +1018,7 @@ async function loadEntries() {
 
     const normalizedEntries = entries.map((entry) => normalizeEntry(entry));
     rebuildEntriesState(normalizedEntries);
+    state.publishedEntries = cloneEntries(state.entries);
     state.adminMode = getRequestedAdminMode();
 
     state.selectedDate = getInitialSelectedDate(state.availableDates);

@@ -294,6 +294,78 @@ h1 {
   color: #7a2314;
 }
 
+.save-confirmation {
+  width: min(920px, calc(100vw - 32px));
+  max-height: min(820px, calc(100vh - 32px));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.save-confirmation::backdrop {
+  background: rgba(44, 34, 22, 0.5);
+}
+
+.save-confirmation-content {
+  display: grid;
+  gap: 16px;
+  padding: 28px;
+}
+
+.save-confirmation-content .section-copy {
+  margin: 0;
+}
+
+.save-diff {
+  display: grid;
+  gap: 16px;
+  max-height: 56vh;
+  overflow: auto;
+}
+
+.save-diff-entry {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-alt);
+}
+
+.save-diff-entry h3,
+.save-diff-value h4 {
+  margin: 0;
+}
+
+.save-diff-entry h3 {
+  color: var(--accent-dark);
+  text-transform: capitalize;
+}
+
+.save-diff-value {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.save-diff-value.before {
+  background: #fff1ee;
+}
+
+.save-diff-value.after {
+  background: #eef6ec;
+}
+
+.save-diff-value pre {
+  margin: 8px 0 0;
+  overflow: auto;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 .primary-button:disabled {
   cursor: wait;
   opacity: 0.7;
