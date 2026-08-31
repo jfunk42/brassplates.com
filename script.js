@@ -340,6 +340,64 @@ function createDiffValue(label, value, className) {
   return wrapper;
 }
 
+function getTextDiff(previous, current) {
+  let prefixLength = 0;
+
+  while (
+    prefixLength < previous.length
+    && prefixLength < current.length
+    && previous[prefixLength] === current[prefixLength]
+  ) {
+    prefixLength += 1;
+  }
+
+  let suffixLength = 0;
+
+  while (
+    suffixLength < previous.length - prefixLength
+    && suffixLength < current.length - prefixLength
+    && previous[previous.length - suffixLength - 1] === current[current.length - suffixLength - 1]
+  ) {
+    suffixLength += 1;
+  }
+
+  return {
+    unchangedStart: previous.slice(0, prefixLength),
+    removed: previous.slice(prefixLength, previous.length - suffixLength),
+    added: current.slice(prefixLength, current.length - suffixLength),
+    unchangedEnd: previous.slice(previous.length - suffixLength),
+  };
+}
+
+function createUpdatedDiff(previous, current) {
+  const wrapper = document.createElement("div");
+  const heading = document.createElement("h4");
+  const code = document.createElement("pre");
+  const diff = getTextDiff(JSON.stringify(previous, null, 2), JSON.stringify(current, null, 2));
+
+  wrapper.className = "save-diff-value changed";
+  heading.textContent = "Changes";
+  code.append(document.createTextNode(diff.unchangedStart));
+
+  if (diff.removed) {
+    const removed = document.createElement("span");
+    removed.className = "save-diff-removed";
+    removed.textContent = diff.removed;
+    code.append(removed);
+  }
+
+  if (diff.added) {
+    const added = document.createElement("span");
+    added.className = "save-diff-added";
+    added.textContent = diff.added;
+    code.append(added);
+  }
+
+  code.append(document.createTextNode(diff.unchangedEnd));
+  wrapper.append(heading, code);
+  return wrapper;
+}
+
 function renderEntriesDiff(changes) {
   const elements = getElements();
   elements.githubSaveDiff.replaceChildren();
@@ -352,11 +410,11 @@ function renderEntriesDiff(changes) {
     heading.textContent = `${change.date} (${change.type})`;
     entry.append(heading);
 
-    if (change.previous) {
+    if (change.type === "updated") {
+      entry.append(createUpdatedDiff(change.previous, change.current));
+    } else if (change.previous) {
       entry.append(createDiffValue("Before", change.previous, "before"));
-    }
-
-    if (change.current) {
+    } else if (change.current) {
       entry.append(createDiffValue("After", change.current, "after"));
     }
 

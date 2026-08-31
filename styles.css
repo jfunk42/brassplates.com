@@ -357,6 +357,10 @@ h1 {
   background: #eef6ec;
 }
 
+.save-diff-value.changed {
+  background: var(--surface);
+}
+
 .save-diff-value pre {
   margin: 8px 0 0;
   overflow: auto;
@@ -364,6 +368,19 @@ h1 {
   font-size: 0.82rem;
   line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.save-diff-removed {
+  border-radius: 3px;
+  background: #f5bdb4;
+  color: #7a2314;
+  text-decoration: line-through;
+}
+
+.save-diff-added {
+  border-radius: 3px;
+  background: #b8d7b2;
+  color: #22491a;
 }
 
 .primary-button:disabled {
