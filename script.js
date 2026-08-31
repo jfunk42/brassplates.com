@@ -14,6 +14,22 @@ const ENTRY_FIELD_LABELS = {
   connecting_thought_text: "Connecting thought",
 };
 
+const GITHUB_API_URL = "https://api.github.com";
+const GITHUB_OWNER = "jfunk42";
+const GITHUB_REPOSITORY = "brassplates.com";
+const GITHUB_MAIN_BRANCH = "main";
+const GITHUB_PAT_STORAGE_KEY = "brassplates.githubPat";
+const DIRECT_PUSH_USERS = [
+  "jfunk42",
+];
+
+class GitHubApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
 function trackAnalyticsEvent(eventName, parameters) {
   if (typeof window.gtag === "function") {
     window.gtag("event", eventName, parameters);
@@ -203,9 +219,10 @@ function getElements() {
     addYouTubeClipButton: document.querySelector("#add-youtube-clip"),
     adminFiles: document.querySelector("#admin-files"),
     addFileButton: document.querySelector("#add-file"),
+    githubPat: document.querySelector("#github-pat"),
+    clearGitHubPatButton: document.querySelector("#clear-github-pat"),
     adminMergeInput: document.querySelector("#admin-merge-input"),
     adminMergeButton: document.querySelector("#admin-merge-button"),
-    adminDownloadButton: document.querySelector("#admin-download-button"),
     entryCard: document.querySelector("#entry-card"),
     entryDate: document.querySelector("#entry-date"),
     bomReference: document.querySelector("#bom-reference"),
@@ -276,6 +293,7 @@ function renderAdminPanel(entry) {
   elements.adminCfmReference.value = editableEntry.come_follow_me_reference;
   elements.adminCfmUrl.value = editableEntry.come_follow_me_reference_url;
   elements.adminThought.value = editableEntry.connecting_thought_text;
+  elements.githubPat.value = getSavedGitHubPat();
   renderResourceInputs(
     elements.adminYouTubeClips,
     editableEntry.youtube_clips,
@@ -538,6 +556,139 @@ function readAdminEntryForm() {
   });
 }
 
+function getSavedGitHubPat() {
+  return window.localStorage.getItem(GITHUB_PAT_STORAGE_KEY) ?? "";
+}
+
+function saveGitHubPat(token) {
+  window.localStorage.setItem(GITHUB_PAT_STORAGE_KEY, token);
+}
+
+function clearSavedGitHubPat() {
+  window.localStorage.removeItem(GITHUB_PAT_STORAGE_KEY);
+}
+
+function encodeBase64(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return window.btoa(binary);
+}
+
+async function githubRequest(path, token, options = {}) {
+  const response = await fetch(`${GITHUB_API_URL}${path}`, {
+    method: options.method ?? "GET",
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+    },
+    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new GitHubApiError(data.message ?? "GitHub request failed.", response.status);
+  }
+
+  return data;
+}
+
+async function ensureEditorBranch(token, login) {
+  const branch = `entries/${login}`;
+  const branchRef = `heads/${branch}`;
+
+  try {
+    await githubRequest(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/git/ref/${branchRef}`,
+      token
+    );
+  } catch (error) {
+    if (!(error instanceof GitHubApiError) || error.status !== 404) {
+      throw error;
+    }
+
+    const mainRef = await githubRequest(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/git/ref/heads/${GITHUB_MAIN_BRANCH}`,
+      token
+    );
+    await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/git/refs`, token, {
+      method: "POST",
+      body: {
+        ref: `refs/heads/${branch}`,
+        sha: mainRef.object.sha,
+      },
+    });
+  }
+
+  return branch;
+}
+
+async function publishEntriesToGitHub(token) {
+  const viewer = await githubRequest("/user", token);
+  const canPushDirectly = DIRECT_PUSH_USERS.some(
+    (username) => username.toLowerCase() === viewer.login.toLowerCase()
+  );
+  const branch = canPushDirectly
+    ? GITHUB_MAIN_BRANCH
+    : await ensureEditorBranch(token, viewer.login);
+  const filePath = "data/entries.json";
+  const existingFile = await githubRequest(
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}?ref=${encodeURIComponent(branch)}`,
+    token
+  );
+  const content = `${JSON.stringify(state.entries, null, 2)}\n`;
+
+  await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}`, token, {
+    method: "PUT",
+    body: {
+      message: `Update entries for ${state.selectedDate}`,
+      content: encodeBase64(content),
+      branch,
+      sha: existingFile.sha,
+    },
+  });
+
+  if (canPushDirectly) {
+    return { login: viewer.login, directPush: true };
+  }
+
+  const pullRequestQuery = new URLSearchParams({
+    state: "open",
+    head: `${GITHUB_OWNER}:${branch}`,
+    base: GITHUB_MAIN_BRANCH,
+  });
+  const pullRequests = await githubRequest(
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/pulls?${pullRequestQuery}`,
+    token
+  );
+
+  if (pullRequests.length > 0) {
+    return { login: viewer.login, pullRequest: pullRequests[0], created: false };
+  }
+
+  const pullRequest = await githubRequest(
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/pulls`,
+    token,
+    {
+      method: "POST",
+      body: {
+        title: `Update scripture entries (${viewer.login})`,
+        head: branch,
+        base: GITHUB_MAIN_BRANCH,
+        body: "Submitted from the Brass Plates admin editor.",
+      },
+    }
+  );
+
+  return { login: viewer.login, pullRequest, created: true, directPush: false };
+}
+
 function upsertEntries(entries) {
   const mergedEntriesByDate = new Map(state.entries.map((entry) => [entry.date, entry]));
   let added = 0;
@@ -557,14 +708,32 @@ function upsertEntries(entries) {
   return { added, replaced };
 }
 
-function handleAdminEntrySave(event) {
+async function handleAdminEntrySave(event) {
   event.preventDefault();
 
   try {
     const savedEntry = readAdminEntryForm();
     upsertEntries([savedEntry]);
     renderSelectedDate();
-    setAdminStatus(`Saved the entry for ${savedEntry.date}.`);
+    const token = getElements().githubPat.value.trim();
+
+    if (!token) {
+      throw new Error("Enter a GitHub personal access token to create a pull request.");
+    }
+
+    saveGitHubPat(token);
+    setAdminStatus("Saving your changes to GitHub...");
+    const result = await publishEntriesToGitHub(token);
+
+    if (result.directPush) {
+      setAdminStatus(`Saved directly to ${GITHUB_MAIN_BRANCH} for ${result.login}.`);
+      return;
+    }
+
+    const action = result.created ? "Created" : "Updated";
+    setAdminStatus(
+      `${action} pull request #${result.pullRequest.number} for ${result.login}.`
+    );
   } catch (error) {
     setAdminStatus(error.message, true);
   }
@@ -607,22 +776,6 @@ function handleAdminMerge() {
   }
 }
 
-function handleAdminDownload() {
-  const json = `${JSON.stringify(state.entries, null, 2)}\n`;
-  const blob = new Blob([json], { type: "application/json" });
-  const downloadUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = downloadUrl;
-  link.download = "entries.json";
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(downloadUrl);
-
-  setAdminStatus("Downloaded the current entries.json file.");
-}
-
 function setSelectedDate(nextDate, { replaceHistory = false, skipHistory = false } = {}) {
   state.selectedDate = nextDate;
   renderSelectedDate();
@@ -658,9 +811,16 @@ function attachEventHandlers() {
   elements.addFileButton.addEventListener("click", () => {
     addResourceInput(elements.adminFiles, "https://...");
   });
+  elements.githubPat.addEventListener("change", () => {
+    saveGitHubPat(elements.githubPat.value.trim());
+  });
+  elements.clearGitHubPatButton.addEventListener("click", () => {
+    clearSavedGitHubPat();
+    elements.githubPat.value = "";
+    setAdminStatus("Removed the saved GitHub token from this browser.");
+  });
   elements.adminEntryForm.addEventListener("submit", handleAdminEntrySave);
   elements.adminMergeButton.addEventListener("click", handleAdminMerge);
-  elements.adminDownloadButton.addEventListener("click", handleAdminDownload);
 
   window.addEventListener("popstate", syncSelectedDateFromUrl);
   window.addEventListener("hashchange", syncSelectedDateFromUrl);

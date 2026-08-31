@@ -46,8 +46,8 @@
           <p class="eyebrow">Admin mode</p>
           <h2>Edit and export entries</h2>
           <p class="section-copy">
-            Changes stay in your browser until you download a fresh <code>entries.json</code>
-            file. Pasted JSON replaces existing entries when the dates match.
+            Save updates to GitHub with a personal access token. Each editor's changes are
+            submitted through a pull request for review unless they are an approved publisher.
           </p>
         </div>
 
@@ -110,7 +110,25 @@
                 <div id="admin-files" class="resource-editor-list"></div>
               </section>
 
-              <button class="primary-button" type="submit">Save current date</button>
+              <section class="github-publishing">
+                <h3>Publish to GitHub</h3>
+                <label class="form-field">
+                  <span>GitHub personal access token</span>
+                  <input
+                    id="github-pat"
+                    type="password"
+                    autocomplete="off"
+                    placeholder="github_pat_..."
+                  >
+                </label>
+                <p class="section-copy">
+                  Stored only in this browser. Use a fine-grained token with Contents read/write
+                  and Pull requests read/write access to the Brass Plates repository.
+                </p>
+                <button id="clear-github-pat" class="nav-button" type="button">Clear saved token</button>
+              </section>
+
+              <button class="primary-button" type="submit">Save and create pull request</button>
             </form>
           </section>
 
@@ -133,9 +151,6 @@
             <div class="admin-actions">
               <button id="admin-merge-button" class="primary-button" type="button">
                 Merge pasted JSON
-              </button>
-              <button id="admin-download-button" class="nav-button" type="button">
-                Download entries.json
               </button>
             </div>
           </section>

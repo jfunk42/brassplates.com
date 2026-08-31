@@ -9,7 +9,18 @@ picker plus inline scripture frames.
 
 Append `#admin` to the URL to open the in-browser admin tools. Admin mode uses
 `#admin/YYYYMMDD`, lets you edit the currently selected date, merge pasted JSON that replaces
-same-date entries, and download a refreshed `entries.json` file for upload back to GitHub.
+same-date entries, and submit the updated `entries.json` through a GitHub pull request.
+
+## Admin publishing
+
+Admin mode requires a GitHub personal access token with read/write Contents and Pull requests
+permissions for this repository. The token is stored in the browser's local storage and is used
+only to create or update the editor's `entries/<GitHub username>` branch and its pull request to
+`main`. Remove it with the **Clear saved token** button when using a shared device.
+
+Users listed in `DIRECT_PUSH_USERS` in `script.js` save directly to `main`; `jfunk42` is the
+initial approved publisher. Add GitHub usernames to this list to approve additional direct
+publishers (matching is case-insensitive). Everyone else continues to use a pull request.
 
 ## Content updates
 

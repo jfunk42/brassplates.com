@@ -264,6 +264,20 @@ h1 {
   gap: 12px;
 }
 
+.github-publishing {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-alt);
+}
+
+.github-publishing h3,
+.github-publishing .section-copy {
+  margin: 0;
+}
+
 .resource-editor-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) 90px auto;
