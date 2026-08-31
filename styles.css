@@ -309,6 +309,29 @@ h1 {
   outline: none;
 }
 
+.youtube-clip {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-alt);
+}
+
+.youtube-clip-description {
+  margin: 0;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.youtube-clip-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 10px;
+  background: #000;
+}
+
 .entry-date {
   margin: 0 0 18px;
   color: var(--accent-dark);

@@ -276,8 +276,12 @@ function renderAdminPanel(entry) {
   elements.adminCfmReference.value = editableEntry.come_follow_me_reference;
   elements.adminCfmUrl.value = editableEntry.come_follow_me_reference_url;
   elements.adminThought.value = editableEntry.connecting_thought_text;
-  renderResourceInputs(elements.adminYouTubeClips, editableEntry.youtube_clips);
-  renderResourceInputs(elements.adminFiles, editableEntry.files);
+  renderResourceInputs(
+    elements.adminYouTubeClips,
+    editableEntry.youtube_clips,
+    "https://youtube.com/watch?v=..."
+  );
+  renderResourceInputs(elements.adminFiles, editableEntry.files, "https://...");
 }
 
 function sortResources(resources) {
@@ -304,6 +308,26 @@ function sortResources(resources) {
     .map(({ resource }) => resource);
 }
 
+function getYouTubeVideoId(url) {
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname.replace(/^www\./, "");
+
+  if (hostname === "youtu.be") {
+    return parsedUrl.pathname.slice(1).split("/")[0] || null;
+  }
+
+  if (!["youtube.com", "m.youtube.com", "music.youtube.com"].includes(hostname)) {
+    return null;
+  }
+
+  if (parsedUrl.pathname === "/watch") {
+    return parsedUrl.searchParams.get("v");
+  }
+
+  const [pathSegment, videoId] = parsedUrl.pathname.split("/").filter(Boolean);
+  return ["embed", "shorts", "live"].includes(pathSegment) ? videoId || null : null;
+}
+
 function renderResources(container, resources) {
   container.replaceChildren();
 
@@ -316,6 +340,29 @@ function renderResources(container, resources) {
     link.rel = "noreferrer";
     link.textContent = resource.description;
     listItem.append(link);
+    container.append(listItem);
+  }
+}
+
+function renderYouTubeClips(container, clips) {
+  container.replaceChildren();
+
+  for (const clip of sortResources(clips)) {
+    const videoId = getYouTubeVideoId(clip.url);
+    const listItem = document.createElement("li");
+    const description = document.createElement("p");
+    const frame = document.createElement("iframe");
+
+    listItem.className = "youtube-clip";
+    description.className = "youtube-clip-description";
+    description.textContent = clip.description;
+    frame.className = "youtube-clip-frame";
+    frame.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0`;
+    frame.title = clip.description;
+    frame.loading = "lazy";
+    frame.allowFullscreen = true;
+    frame.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    listItem.append(description, frame);
     container.append(listItem);
   }
 }
@@ -349,7 +396,7 @@ function renderSelectedDate() {
   elements.cfmFrame.src = entry.come_follow_me_reference_url;
   elements.youtubeClips.hidden = entry.youtube_clips.length === 0;
   elements.files.hidden = entry.files.length === 0;
-  renderResources(elements.youtubeClipsList, entry.youtube_clips);
+  renderYouTubeClips(elements.youtubeClipsList, entry.youtube_clips);
   renderResources(elements.filesList, entry.files);
 }
 
@@ -382,6 +429,10 @@ function normalizeResources(resources, fieldName) {
 
     if (order !== undefined && !Number.isFinite(order)) {
       throw new Error(`${fieldName} item ${index + 1} order must be a number.`);
+    }
+
+    if (fieldName === "YouTube clips" && !getYouTubeVideoId(url)) {
+      throw new Error(`${fieldName} item ${index + 1} must use a YouTube video URL.`);
     }
 
     return order === undefined ? { description, url } : { description, url, order };
@@ -421,7 +472,7 @@ function normalizeEntry(entry, fallbackDate = null) {
   return normalizedEntry;
 }
 
-function createResourceInput(resource = {}) {
+function createResourceInput(resource = {}, urlPlaceholder = "https://...") {
   const row = document.createElement("div");
   const description = document.createElement("input");
   const url = document.createElement("input");
@@ -435,7 +486,7 @@ function createResourceInput(resource = {}) {
   description.value = resource.description ?? "";
   description.dataset.resourceDescription = "";
   url.type = "url";
-  url.placeholder = "https://...";
+  url.placeholder = urlPlaceholder;
   url.value = resource.url ?? "";
   url.dataset.resourceUrl = "";
   order.type = "number";
@@ -452,12 +503,14 @@ function createResourceInput(resource = {}) {
   return row;
 }
 
-function renderResourceInputs(container, resources) {
-  container.replaceChildren(...resources.map((resource) => createResourceInput(resource)));
+function renderResourceInputs(container, resources, urlPlaceholder) {
+  container.replaceChildren(
+    ...resources.map((resource) => createResourceInput(resource, urlPlaceholder))
+  );
 }
 
-function addResourceInput(container) {
-  const input = createResourceInput();
+function addResourceInput(container, urlPlaceholder) {
+  const input = createResourceInput({}, urlPlaceholder);
   container.append(input);
   input.querySelector("[data-resource-description]").focus();
 }
@@ -600,10 +653,10 @@ function attachEventHandlers() {
   });
 
   elements.addYouTubeClipButton.addEventListener("click", () => {
-    addResourceInput(elements.adminYouTubeClips);
+    addResourceInput(elements.adminYouTubeClips, "https://youtube.com/watch?v=...");
   });
   elements.addFileButton.addEventListener("click", () => {
-    addResourceInput(elements.adminFiles);
+    addResourceInput(elements.adminFiles, "https://...");
   });
   elements.adminEntryForm.addEventListener("submit", handleAdminEntrySave);
   elements.adminMergeButton.addEventListener("click", handleAdminMerge);

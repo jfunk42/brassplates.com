@@ -23,6 +23,7 @@ Add or edit entries in `data/entries.json`. Each entry should include:
 - `connecting_thought_text`
 - Optional `youtube_clips` and `files` arrays. Each item requires `url` and `description`, and
   can include a numeric `order` (lower values appear first; unordered items follow ordered ones).
+  YouTube clips must use a YouTube video URL and render as paused embedded previews.
 
 ## Publish
 
