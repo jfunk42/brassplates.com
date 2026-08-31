@@ -1150,7 +1150,7 @@ async function loadEntries() {
   const elements = getElements();
 
   try {
-    const response = await fetch("./data/cfm.json");
+    const response = await fetch("./data/cfm.json", { cache: "no-store" });
 
     if (!response.ok) {
       throw new Error(`Failed to load entries: ${response.status}`);
