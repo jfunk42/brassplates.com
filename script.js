@@ -763,15 +763,15 @@ function encodeBase64(value) {
     binary += String.fromCharCode(byte);
   }
 
-  async function encodeFileBase64(file) {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    let binary = "";
+  return window.btoa(binary);
+}
 
-    for (const byte of bytes) {
-      binary += String.fromCharCode(byte);
-    }
+async function encodeFileBase64(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
 
-    return window.btoa(binary);
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
   }
 
   return window.btoa(binary);
