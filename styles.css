@@ -234,6 +234,81 @@ h1 {
   gap: 12px;
 }
 
+.resource-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-alt);
+}
+
+.resource-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+
+.resource-editor-heading h3,
+.resources h2 {
+  margin: 0;
+}
+
+.resource-editor-heading .section-copy {
+  margin: 4px 0 0;
+}
+
+.resource-editor-list {
+  display: grid;
+  gap: 12px;
+}
+
+.resource-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) 90px auto;
+  gap: 10px;
+}
+
+.resource-editor-row input {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.resources {
+  margin-top: 28px;
+}
+
+.resource-list {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resource-list a {
+  display: block;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.resource-list a:hover,
+.resource-list a:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
 .entry-date {
   margin: 0 0 18px;
   color: var(--accent-dark);
@@ -340,6 +415,15 @@ h1 {
 
   .admin-actions {
     flex-direction: column;
+  }
+
+  .resource-editor-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resource-editor-row {
+    grid-template-columns: 1fr;
   }
 
   .study-frame {

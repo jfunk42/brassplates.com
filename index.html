@@ -88,6 +88,28 @@
                 <textarea id="admin-thought" rows="6" required></textarea>
               </label>
 
+              <section class="resource-editor">
+                <div class="resource-editor-heading">
+                  <div>
+                    <h3>YouTube clips</h3>
+                    <p class="section-copy">Add optional videos for this date.</p>
+                  </div>
+                  <button id="add-youtube-clip" class="nav-button" type="button">Add YouTube clip</button>
+                </div>
+                <div id="admin-youtube-clips" class="resource-editor-list"></div>
+              </section>
+
+              <section class="resource-editor">
+                <div class="resource-editor-heading">
+                  <div>
+                    <h3>Files</h3>
+                    <p class="section-copy">Add optional file links for this date.</p>
+                  </div>
+                  <button id="add-file" class="nav-button" type="button">Add file</button>
+                </div>
+                <div id="admin-files" class="resource-editor-list"></div>
+              </section>
+
               <button class="primary-button" type="submit">Save current date</button>
             </form>
           </section>
@@ -142,6 +164,16 @@
             <iframe id="cfm-frame" class="study-frame" title="Come, Follow Me reference"></iframe>
           </article>
         </div>
+
+        <section id="youtube-clips" class="resources" hidden>
+          <h2>YouTube clips</h2>
+          <ul id="youtube-clips-list" class="resource-list"></ul>
+        </section>
+
+        <section id="files" class="resources" hidden>
+          <h2>Files</h2>
+          <ul id="files-list" class="resource-list"></ul>
+        </section>
       </article>
 
       <p id="empty-state" class="empty-state" hidden></p>

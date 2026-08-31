@@ -21,6 +21,8 @@ Add or edit entries in `data/entries.json`. Each entry should include:
 - `come_follow_me_reference`
 - `come_follow_me_reference_url`
 - `connecting_thought_text`
+- Optional `youtube_clips` and `files` arrays. Each item requires `url` and `description`, and
+  can include a numeric `order` (lower values appear first; unordered items follow ordered ones).
 
 ## Publish
 

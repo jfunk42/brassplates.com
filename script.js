@@ -199,6 +199,10 @@ function getElements() {
     adminCfmReference: document.querySelector("#admin-cfm-reference"),
     adminCfmUrl: document.querySelector("#admin-cfm-url"),
     adminThought: document.querySelector("#admin-thought"),
+    adminYouTubeClips: document.querySelector("#admin-youtube-clips"),
+    addYouTubeClipButton: document.querySelector("#add-youtube-clip"),
+    adminFiles: document.querySelector("#admin-files"),
+    addFileButton: document.querySelector("#add-file"),
     adminMergeInput: document.querySelector("#admin-merge-input"),
     adminMergeButton: document.querySelector("#admin-merge-button"),
     adminDownloadButton: document.querySelector("#admin-download-button"),
@@ -212,6 +216,10 @@ function getElements() {
     emptyState: document.querySelector("#empty-state"),
     bomFrame: document.querySelector("#bom-frame"),
     cfmFrame: document.querySelector("#cfm-frame"),
+    youtubeClips: document.querySelector("#youtube-clips"),
+    youtubeClipsList: document.querySelector("#youtube-clips-list"),
+    files: document.querySelector("#files"),
+    filesList: document.querySelector("#files-list"),
   };
 }
 
@@ -234,6 +242,8 @@ function getBlankEntry(date) {
     come_follow_me_reference: "",
     come_follow_me_reference_url: "",
     connecting_thought_text: "",
+    youtube_clips: [],
+    files: [],
   };
 }
 
@@ -266,6 +276,48 @@ function renderAdminPanel(entry) {
   elements.adminCfmReference.value = editableEntry.come_follow_me_reference;
   elements.adminCfmUrl.value = editableEntry.come_follow_me_reference_url;
   elements.adminThought.value = editableEntry.connecting_thought_text;
+  renderResourceInputs(elements.adminYouTubeClips, editableEntry.youtube_clips);
+  renderResourceInputs(elements.adminFiles, editableEntry.files);
+}
+
+function sortResources(resources) {
+  return resources
+    .map((resource, index) => ({ resource, index }))
+    .sort((left, right) => {
+      const leftOrder = left.resource.order;
+      const rightOrder = right.resource.order;
+
+      if (leftOrder === undefined && rightOrder === undefined) {
+        return left.index - right.index;
+      }
+
+      if (leftOrder === undefined) {
+        return 1;
+      }
+
+      if (rightOrder === undefined) {
+        return -1;
+      }
+
+      return leftOrder - rightOrder || left.index - right.index;
+    })
+    .map(({ resource }) => resource);
+}
+
+function renderResources(container, resources) {
+  container.replaceChildren();
+
+  for (const resource of sortResources(resources)) {
+    const listItem = document.createElement("li");
+    const link = document.createElement("a");
+
+    link.href = resource.url;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.textContent = resource.description;
+    listItem.append(link);
+    container.append(listItem);
+  }
 }
 
 function renderSelectedDate() {
@@ -295,6 +347,45 @@ function renderSelectedDate() {
 
   elements.bomFrame.src = entry.book_of_mormon_reference_url;
   elements.cfmFrame.src = entry.come_follow_me_reference_url;
+  elements.youtubeClips.hidden = entry.youtube_clips.length === 0;
+  elements.files.hidden = entry.files.length === 0;
+  renderResources(elements.youtubeClipsList, entry.youtube_clips);
+  renderResources(elements.filesList, entry.files);
+}
+
+function normalizeResources(resources, fieldName) {
+  if (resources === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(resources)) {
+    throw new Error(`${fieldName} must be an array.`);
+  }
+
+  return resources.map((resource, index) => {
+    const description = String(resource.description ?? "").trim();
+    const url = String(resource.url ?? "").trim();
+    const orderValue = resource.order;
+    const order = orderValue === "" || orderValue === undefined || orderValue === null
+      ? undefined
+      : Number(orderValue);
+
+    if (!description || !url) {
+      throw new Error(`${fieldName} item ${index + 1} requires a description and URL.`);
+    }
+
+    try {
+      new URL(url);
+    } catch (error) {
+      throw new Error(`${fieldName} item ${index + 1} must use a valid absolute URL.`);
+    }
+
+    if (order !== undefined && !Number.isFinite(order)) {
+      throw new Error(`${fieldName} item ${index + 1} order must be a number.`);
+    }
+
+    return order === undefined ? { description, url } : { description, url, order };
+  });
 }
 
 function normalizeEntry(entry, fallbackDate = null) {
@@ -317,6 +408,9 @@ function normalizeEntry(entry, fallbackDate = null) {
     }
   }
 
+  normalizedEntry.youtube_clips = normalizeResources(entry.youtube_clips, "YouTube clips");
+  normalizedEntry.files = normalizeResources(entry.files, "Files");
+
   try {
     new URL(normalizedEntry.book_of_mormon_reference_url);
     new URL(normalizedEntry.come_follow_me_reference_url);
@@ -325,6 +419,55 @@ function normalizeEntry(entry, fallbackDate = null) {
   }
 
   return normalizedEntry;
+}
+
+function createResourceInput(resource = {}) {
+  const row = document.createElement("div");
+  const description = document.createElement("input");
+  const url = document.createElement("input");
+  const order = document.createElement("input");
+  const removeButton = document.createElement("button");
+
+  row.className = "resource-editor-row";
+  row.dataset.resourceRow = "";
+  description.type = "text";
+  description.placeholder = "Description";
+  description.value = resource.description ?? "";
+  description.dataset.resourceDescription = "";
+  url.type = "url";
+  url.placeholder = "https://...";
+  url.value = resource.url ?? "";
+  url.dataset.resourceUrl = "";
+  order.type = "number";
+  order.step = "1";
+  order.placeholder = "Order";
+  order.value = resource.order ?? "";
+  order.dataset.resourceOrder = "";
+  removeButton.className = "nav-button";
+  removeButton.type = "button";
+  removeButton.textContent = "Remove";
+  removeButton.addEventListener("click", () => row.remove());
+
+  row.append(description, url, order, removeButton);
+  return row;
+}
+
+function renderResourceInputs(container, resources) {
+  container.replaceChildren(...resources.map((resource) => createResourceInput(resource)));
+}
+
+function addResourceInput(container) {
+  const input = createResourceInput();
+  container.append(input);
+  input.querySelector("[data-resource-description]").focus();
+}
+
+function readResourceInputs(container) {
+  return Array.from(container.querySelectorAll("[data-resource-row]"), (row) => ({
+    description: row.querySelector("[data-resource-description]").value,
+    url: row.querySelector("[data-resource-url]").value,
+    order: row.querySelector("[data-resource-order]").value,
+  }));
 }
 
 function readAdminEntryForm() {
@@ -337,6 +480,8 @@ function readAdminEntryForm() {
     come_follow_me_reference: elements.adminCfmReference.value,
     come_follow_me_reference_url: elements.adminCfmUrl.value,
     connecting_thought_text: elements.adminThought.value,
+    youtube_clips: readResourceInputs(elements.adminYouTubeClips),
+    files: readResourceInputs(elements.adminFiles),
   });
 }
 
@@ -454,6 +599,12 @@ function attachEventHandlers() {
     }
   });
 
+  elements.addYouTubeClipButton.addEventListener("click", () => {
+    addResourceInput(elements.adminYouTubeClips);
+  });
+  elements.addFileButton.addEventListener("click", () => {
+    addResourceInput(elements.adminFiles);
+  });
   elements.adminEntryForm.addEventListener("submit", handleAdminEntrySave);
   elements.adminMergeButton.addEventListener("click", handleAdminMerge);
   elements.adminDownloadButton.addEventListener("click", handleAdminDownload);
