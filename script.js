@@ -14,6 +14,33 @@ const ENTRY_FIELD_LABELS = {
   connecting_thought_text: "Connecting thought",
 };
 
+function trackAnalyticsEvent(eventName, parameters) {
+  if (typeof window.gtag === "function") {
+    window.gtag("event", eventName, parameters);
+  }
+}
+
+function trackDateView(date) {
+  trackAnalyticsEvent("date_view", {
+    selected_date: date,
+    has_entry: state.entriesByDate.has(date),
+  });
+}
+
+function trackButtonClick(event) {
+  const button = event.target.closest("button");
+
+  if (!button) {
+    return;
+  }
+
+  trackAnalyticsEvent("button_click", {
+    button_id: button.id || "save-current-date",
+    button_text: button.textContent.trim(),
+    selected_date: state.selectedDate,
+  });
+}
+
 function formatIsoDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -122,6 +149,7 @@ function syncSelectedDateFromUrl() {
 
   if (shouldRender) {
     renderSelectedDate();
+    trackDateView(state.selectedDate);
   }
 
   if (state.adminMode && !requestedDate && state.selectedDate) {
@@ -400,6 +428,7 @@ function handleAdminDownload() {
 function setSelectedDate(nextDate, { replaceHistory = false, skipHistory = false } = {}) {
   state.selectedDate = nextDate;
   renderSelectedDate();
+  trackDateView(nextDate);
 
   if (!skipHistory) {
     updateSelectedDateUrl(replaceHistory);
@@ -408,6 +437,8 @@ function setSelectedDate(nextDate, { replaceHistory = false, skipHistory = false
 
 function attachEventHandlers() {
   const elements = getElements();
+
+  document.addEventListener("click", trackButtonClick);
 
   elements.previousDayButton.addEventListener("click", () => {
     setSelectedDate(addDays(state.selectedDate, -1));
