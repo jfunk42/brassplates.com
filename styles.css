@@ -396,7 +396,11 @@ h1 {
 }
 
 .resource-editor-row[data-resource-has-title] {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.5fr) 90px auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.resource-editor-row[data-resource-has-title] .resource-editor-field:nth-child(3) {
+  grid-column: 1 / -1;
 }
 
 .resource-editor-field {
