@@ -392,6 +392,23 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) 90px auto;
   gap: 10px;
+  align-items: end;
+}
+
+.resource-editor-row[data-resource-has-title] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.5fr) 90px auto;
+}
+
+.resource-editor-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.resource-editor-field span {
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .resource-editor-row input {

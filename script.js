@@ -679,6 +679,16 @@ function normalizeEntry(entry, fallbackDate = null) {
   return normalizedEntry;
 }
 
+function createResourceField(labelText, input) {
+  const label = document.createElement("label");
+  const text = document.createElement("span");
+
+  label.className = "resource-editor-field";
+  text.textContent = labelText;
+  label.append(text, input);
+  return label;
+}
+
 function createResourceInput(resource = {}, urlPlaceholder = "https://...", includesTitle = false) {
   const row = document.createElement("div");
   const title = document.createElement("input");
@@ -689,6 +699,9 @@ function createResourceInput(resource = {}, urlPlaceholder = "https://...", incl
 
   row.className = "resource-editor-row";
   row.dataset.resourceRow = "";
+  if (includesTitle) {
+    row.dataset.resourceHasTitle = "";
+  }
   title.type = "text";
   title.placeholder = "Title (optional)";
   title.value = resource.title ?? "";
@@ -712,10 +725,15 @@ function createResourceInput(resource = {}, urlPlaceholder = "https://...", incl
   removeButton.addEventListener("click", () => row.remove());
 
   if (includesTitle) {
-    row.append(title);
+    row.append(createResourceField("Title", title));
   }
 
-  row.append(description, url, order, removeButton);
+  row.append(
+    createResourceField("Description", description),
+    createResourceField("URL", url),
+    createResourceField("Order", order),
+    removeButton
+  );
   return row;
 }
 
