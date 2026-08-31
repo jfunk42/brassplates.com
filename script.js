@@ -5,6 +5,7 @@ const state = {
   selectedDate: null,
   adminMode: false,
   publishedEntries: [],
+  pendingFileUploads: new Map(),
 };
 
 const ENTRY_FIELD_LABELS = {
@@ -20,6 +21,7 @@ const GITHUB_OWNER = "jfunk42";
 const GITHUB_REPOSITORY = "brassplates.com";
 const GITHUB_MAIN_BRANCH = "main";
 const GITHUB_PAT_STORAGE_KEY = "brassplates.githubPat";
+const MAX_UPLOAD_BYTES = 1024 * 1024;
 const DIRECT_PUSH_USERS = [
   "jfunk42",
 ];
@@ -221,6 +223,7 @@ function getElements() {
     addYouTubeClipButton: document.querySelector("#add-youtube-clip"),
     adminFiles: document.querySelector("#admin-files"),
     addFileButton: document.querySelector("#add-file"),
+    adminFileUpload: document.querySelector("#admin-file-upload"),
     githubPat: document.querySelector("#github-pat"),
     clearGitHubPatButton: document.querySelector("#clear-github-pat"),
     githubStatus: document.querySelector("#github-status"),
@@ -696,6 +699,27 @@ function addResourceInput(container, urlPlaceholder) {
   input.querySelector("[data-resource-description]").focus();
 }
 
+function getUploadedFileUrl(file) {
+  if (!file.name || file.name === "." || file.name === ".." || /[\/\\]/.test(file.name)) {
+    throw new Error("Choose a file with a valid filename.");
+  }
+
+  return `https://brassplates.com/data/files/${encodeURIComponent(file.name)}`;
+}
+
+function addUploadedFile(file) {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("Uploaded files must be 1 MB or smaller.");
+  }
+
+  const url = getUploadedFileUrl(file);
+  const elements = getElements();
+  elements.adminFiles.append(
+    createResourceInput({ description: file.name, url }, "https://...")
+  );
+  state.pendingFileUploads.set(url, file);
+}
+
 function readResourceInputs(container) {
   return Array.from(container.querySelectorAll("[data-resource-row]"), (row) => ({
     description: row.querySelector("[data-resource-description]").value,
@@ -737,6 +761,17 @@ function encodeBase64(value) {
 
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
+  }
+
+  async function encodeFileBase64(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = "";
+
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+
+    return window.btoa(binary);
   }
 
   return window.btoa(binary);
@@ -832,6 +867,43 @@ async function updateEntriesFile(token, branch) {
   throw new Error("Unable to update cfm.json.");
 }
 
+async function uploadPendingFiles(token, branch) {
+  const referencedUrls = new Set(
+    state.entries.flatMap((entry) => entry.files.map((file) => file.url))
+  );
+
+  for (const [url, file] of state.pendingFileUploads) {
+    if (!referencedUrls.has(url)) {
+      continue;
+    }
+
+    const filePath = `data/files/${encodeURIComponent(file.name)}`;
+    let existingFile = null;
+
+    try {
+      existingFile = await githubRequest(
+        `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}?ref=${encodeURIComponent(branch)}`,
+        token
+      );
+    } catch (error) {
+      if (!(error instanceof GitHubApiError) || error.status !== 404) {
+        throw error;
+      }
+    }
+
+    setGitHubStatus(`Uploading ${file.name} to GitHub...`);
+    await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}`, token, {
+      method: "PUT",
+      body: {
+        message: `Upload ${file.name}`,
+        content: await encodeFileBase64(file),
+        branch,
+        ...(existingFile ? { sha: existingFile.sha } : {}),
+      },
+    });
+  }
+}
+
 async function publishEntriesToGitHub(token) {
   const viewer = await githubRequest("/user", token);
   const canPushDirectly = DIRECT_PUSH_USERS.some(
@@ -840,6 +912,7 @@ async function publishEntriesToGitHub(token) {
   const branch = canPushDirectly
     ? GITHUB_MAIN_BRANCH
     : await ensureEditorBranch(token, viewer.login);
+  await uploadPendingFiles(token, branch);
   const fileUpdate = await updateEntriesFile(token, branch);
 
   if (canPushDirectly) {
@@ -941,6 +1014,7 @@ async function handleGitHubSaveConfirmation() {
     const result = await publishEntriesToGitHub(token);
     const commitSha = result.fileUpdate.commit.sha.slice(0, 7);
     state.publishedEntries = cloneEntries(state.entries);
+    state.pendingFileUploads.clear();
 
     if (result.directPush) {
       setAdminStatus(`Saved directly to ${GITHUB_MAIN_BRANCH} for ${result.login}.`);
@@ -1037,6 +1111,20 @@ function attachEventHandlers() {
   });
   elements.addFileButton.addEventListener("click", () => {
     addResourceInput(elements.adminFiles, "https://...");
+  });
+  elements.adminFileUpload.addEventListener("change", () => {
+    const [file] = elements.adminFileUpload.files;
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      addUploadedFile(file);
+      elements.adminFileUpload.value = "";
+    } catch (error) {
+      setAdminStatus(error.message, true);
+    }
   });
   elements.githubPat.addEventListener("change", () => {
     saveGitHubPat(elements.githubPat.value.trim());

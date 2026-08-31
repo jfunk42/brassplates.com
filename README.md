@@ -36,6 +36,8 @@ Add or edit entries in `data/cfm.json`. Each entry should include:
 - Optional `youtube_clips` and `files` arrays. Each item requires `url` and `description`, and
   can include a numeric `order` (lower values appear first; unordered items follow ordered ones).
   YouTube clips must use a YouTube video URL and render as paused embedded previews.
+  Files can use an existing URL or be uploaded through admin mode. Uploads are stored in
+  `data/files/`, limited to 1 MB, and overwrite an existing file with the same name.
 
 ## Publish
 
