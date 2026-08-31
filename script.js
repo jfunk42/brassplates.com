@@ -138,7 +138,9 @@ function updateSelectedDateUrl(replace = false) {
   url.searchParams.delete("date");
   url.hash = state.adminMode
     ? formatAdminHashDate(state.selectedDate)
-    : formatHashDate(state.selectedDate);
+    : state.selectedDate === getTodayIsoDate()
+      ? ""
+      : formatHashDate(state.selectedDate);
 
   if (replace) {
     window.history.replaceState(
@@ -184,25 +186,7 @@ function getInitialSelectedDate(availableDates) {
     return requestedDate;
   }
 
-  const today = getTodayIsoDate();
-
-  if (availableDates.includes(today)) {
-    return today;
-  }
-
-  const previousDates = availableDates.filter((date) => date < today);
-
-  if (previousDates.length > 0) {
-    return previousDates[previousDates.length - 1];
-  }
-
-  const nextDates = availableDates.filter((date) => date > today);
-
-  if (nextDates.length > 0) {
-    return nextDates[0];
-  }
-
-  return today;
+  return getTodayIsoDate();
 }
 
 function getElements() {

@@ -455,7 +455,7 @@ h1 {
 }
 
 .resource-description {
-  margin: 8px 0 0;
+  margin: 8px 0 0 12px;
   color: var(--muted);
   line-height: 1.5;
 }
