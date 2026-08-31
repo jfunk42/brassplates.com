@@ -797,7 +797,7 @@ async function ensureEditorBranch(token, login) {
 }
 
 async function updateEntriesFile(token, branch) {
-  const filePath = "data/entries.json";
+  const filePath = "data/cfm.json";
   const content = `${JSON.stringify(state.entries, null, 2)}\n`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -829,7 +829,7 @@ async function updateEntriesFile(token, branch) {
     }
   }
 
-  throw new Error("Unable to update entries.json.");
+  throw new Error("Unable to update cfm.json.");
 }
 
 async function publishEntriesToGitHub(token) {
@@ -935,7 +935,7 @@ async function handleGitHubSaveConfirmation() {
   elements.githubSaveConfirmation.close();
   setGitHubSaveState(true);
   setAdminStatus("Saving your changes to GitHub...");
-  setGitHubStatus("Saving data/entries.json to GitHub...");
+  setGitHubStatus("Saving data/cfm.json to GitHub...");
 
   try {
     const result = await publishEntriesToGitHub(token);
@@ -1062,7 +1062,7 @@ async function loadEntries() {
   const elements = getElements();
 
   try {
-    const response = await fetch("./data/entries.json");
+    const response = await fetch("./data/cfm.json");
 
     if (!response.ok) {
       throw new Error(`Failed to load entries: ${response.status}`);

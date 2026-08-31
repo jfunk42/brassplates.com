@@ -9,7 +9,7 @@ picker plus inline scripture frames.
 
 Append `#admin` to the URL to open the in-browser admin tools. Admin mode uses
 `#admin/YYYYMMDD`, lets you edit the currently selected date, merge pasted JSON that replaces
-same-date entries, and submit the updated `entries.json` through a GitHub pull request.
+same-date entries, and submit the updated `cfm.json` through a GitHub pull request.
 
 ## Admin publishing
 
@@ -25,7 +25,7 @@ publishers (matching is case-insensitive). Everyone else continues to use a pull
 
 ## Content updates
 
-Add or edit entries in `data/entries.json`. Each entry should include:
+Add or edit entries in `data/cfm.json`. Each entry should include:
 
 - `date`
 - `book_of_mormon_reference`
