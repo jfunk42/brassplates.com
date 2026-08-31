@@ -24,9 +24,10 @@ const DIRECT_PUSH_USERS = [
 ];
 
 class GitHubApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, documentationUrl = null) {
     super(message);
     this.status = status;
+    this.documentationUrl = documentationUrl;
   }
 }
 
@@ -221,6 +222,8 @@ function getElements() {
     addFileButton: document.querySelector("#add-file"),
     githubPat: document.querySelector("#github-pat"),
     clearGitHubPatButton: document.querySelector("#clear-github-pat"),
+    githubStatus: document.querySelector("#github-status"),
+    githubSaveButton: document.querySelector("#github-save"),
     adminMergeInput: document.querySelector("#admin-merge-input"),
     adminMergeButton: document.querySelector("#admin-merge-button"),
     entryCard: document.querySelector("#entry-card"),
@@ -269,6 +272,21 @@ function setAdminStatus(message, isError = false) {
   elements.adminStatus.hidden = false;
   elements.adminStatus.textContent = message;
   elements.adminStatus.classList.toggle("is-error", isError);
+}
+
+function setGitHubStatus(message, isError = false) {
+  const elements = getElements();
+  elements.githubStatus.hidden = false;
+  elements.githubStatus.textContent = message;
+  elements.githubStatus.classList.toggle("is-error", isError);
+}
+
+function setGitHubSaveState(isSaving) {
+  const elements = getElements();
+  elements.githubSaveButton.disabled = isSaving;
+  elements.githubSaveButton.textContent = isSaving
+    ? "Saving to GitHub..."
+    : "Save and create pull request";
 }
 
 function clearAdminStatus() {
@@ -593,7 +611,11 @@ async function githubRequest(path, token, options = {}) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new GitHubApiError(data.message ?? "GitHub request failed.", response.status);
+    throw new GitHubApiError(
+      data.message ?? "GitHub request failed.",
+      response.status,
+      data.documentation_url ?? null
+    );
   }
 
   return data;
@@ -629,6 +651,42 @@ async function ensureEditorBranch(token, login) {
   return branch;
 }
 
+async function updateEntriesFile(token, branch) {
+  const filePath = "data/entries.json";
+  const content = `${JSON.stringify(state.entries, null, 2)}\n`;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const existingFile = await githubRequest(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}?ref=${encodeURIComponent(branch)}`,
+      token
+    );
+
+    try {
+      return await githubRequest(
+        `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}`,
+        token,
+        {
+          method: "PUT",
+          body: {
+            message: `Update entries for ${state.selectedDate}`,
+            content: encodeBase64(content),
+            branch,
+            sha: existingFile.sha,
+          },
+        }
+      );
+    } catch (error) {
+      if (!(error instanceof GitHubApiError) || error.status !== 409 || attempt === 1) {
+        throw error;
+      }
+
+      setGitHubStatus("GitHub reported a file conflict. Retrying with the latest version...");
+    }
+  }
+
+  throw new Error("Unable to update entries.json.");
+}
+
 async function publishEntriesToGitHub(token) {
   const viewer = await githubRequest("/user", token);
   const canPushDirectly = DIRECT_PUSH_USERS.some(
@@ -637,25 +695,10 @@ async function publishEntriesToGitHub(token) {
   const branch = canPushDirectly
     ? GITHUB_MAIN_BRANCH
     : await ensureEditorBranch(token, viewer.login);
-  const filePath = "data/entries.json";
-  const existingFile = await githubRequest(
-    `/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}?ref=${encodeURIComponent(branch)}`,
-    token
-  );
-  const content = `${JSON.stringify(state.entries, null, 2)}\n`;
-
-  await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPOSITORY}/contents/${filePath}`, token, {
-    method: "PUT",
-    body: {
-      message: `Update entries for ${state.selectedDate}`,
-      content: encodeBase64(content),
-      branch,
-      sha: existingFile.sha,
-    },
-  });
+  const fileUpdate = await updateEntriesFile(token, branch);
 
   if (canPushDirectly) {
-    return { login: viewer.login, directPush: true };
+    return { login: viewer.login, directPush: true, fileUpdate };
   }
 
   const pullRequestQuery = new URLSearchParams({
@@ -669,7 +712,7 @@ async function publishEntriesToGitHub(token) {
   );
 
   if (pullRequests.length > 0) {
-    return { login: viewer.login, pullRequest: pullRequests[0], created: false };
+    return { login: viewer.login, pullRequest: pullRequests[0], created: false, fileUpdate };
   }
 
   const pullRequest = await githubRequest(
@@ -686,7 +729,7 @@ async function publishEntriesToGitHub(token) {
     }
   );
 
-  return { login: viewer.login, pullRequest, created: true, directPush: false };
+  return { login: viewer.login, pullRequest, created: true, directPush: false, fileUpdate };
 }
 
 function upsertEntries(entries) {
@@ -710,6 +753,8 @@ function upsertEntries(entries) {
 
 async function handleAdminEntrySave(event) {
   event.preventDefault();
+  setGitHubSaveState(true);
+  setGitHubStatus("Validating your entry...");
 
   try {
     const savedEntry = readAdminEntryForm();
@@ -723,10 +768,13 @@ async function handleAdminEntrySave(event) {
 
     saveGitHubPat(token);
     setAdminStatus("Saving your changes to GitHub...");
+    setGitHubStatus("Saving data/entries.json to GitHub...");
     const result = await publishEntriesToGitHub(token);
+    const commitSha = result.fileUpdate.commit.sha.slice(0, 7);
 
     if (result.directPush) {
       setAdminStatus(`Saved directly to ${GITHUB_MAIN_BRANCH} for ${result.login}.`);
+      setGitHubStatus(`GitHub API response: 200 OK. Created commit ${commitSha} on main.`);
       return;
     }
 
@@ -734,8 +782,17 @@ async function handleAdminEntrySave(event) {
     setAdminStatus(
       `${action} pull request #${result.pullRequest.number} for ${result.login}.`
     );
+    setGitHubStatus(
+      `GitHub API response: 200 OK. Saved commit ${commitSha}; ${action.toLowerCase()} pull request #${result.pullRequest.number}.`
+    );
   } catch (error) {
-    setAdminStatus(error.message, true);
+    const response = error instanceof GitHubApiError
+      ? `GitHub API response: ${error.status}. ${error.message}`
+      : error.message;
+    setAdminStatus(response, true);
+    setGitHubStatus(response, true);
+  } finally {
+    setGitHubSaveState(false);
   }
 }
 

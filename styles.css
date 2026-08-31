@@ -278,6 +278,27 @@ h1 {
   margin: 0;
 }
 
+.github-status {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #b8d7b2;
+  border-radius: 12px;
+  background: #eef6ec;
+  color: #22491a;
+  line-height: 1.5;
+}
+
+.github-status.is-error {
+  border-color: #e0b1a8;
+  background: #fff1ee;
+  color: #7a2314;
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .resource-editor-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) 90px auto;
